@@ -1,11 +1,9 @@
+import uuid
+from dataclasses import dataclass
 from io import BytesIO
 
 import fasthtml.common as fh
 import pandas as pd
-from dotenv import load_dotenv
-from pydantic import BaseModel
-
-load_dotenv()
 
 
 def create_app():
@@ -31,24 +29,32 @@ def create_app():
 
     app = fh.FastHTML(hdrs=(fh.picolink, scripts()))
 
-    class FormData(BaseModel):
+    @dataclass
+    class ForecastParams:
         freq: str = "MS"
         horizon: int = 12
         finetune_steps: int = 0
         level: int = 90
-        uploaded_file: str | None = None
 
-    @app.route("/upload_file", methods=["POST"])
-    async def upload_file(uploaded_file: fh.UploadFile, session):
-        contents = await uploaded_file.read()
-        df = pd.read_csv(BytesIO(contents))
-        session["df"] = df.to_json(orient="split")
+    @app.route("/forecast", methods=["POST"])
+    def forecast(forecast_params: ForecastParams, session):
+        if "df_filename" not in session:
+            return fh.Div("Please upload data first")
+        # df = pd.read_csv(session["df_filename"])
+        return fh.Div("Forecasting...")
 
     @app.route("/")
-    def index(request, session):
+    async def post(uploaded_file: fh.UploadFile, session):
+        contents = await uploaded_file.read()
+        df = pd.read_csv(BytesIO(contents))
+        random_filename = f"{uuid.uuid4()}.csv"
+        df.to_csv(random_filename, index=False)
+        session["df_filename"] = random_filename
+        return fh.Div("Data uploaded")
+
+    @app.route("/")
+    def get(session):
         """Main page of the app."""
-        if "processed" not in session:
-            session["processed"] = {}
         return fh.Div(
             fh.H1("Time Series Forecasting App"),
             fh.P(
@@ -62,11 +68,13 @@ def create_app():
                             fh.Input(id="uploaded_file", type="file"),
                             fh.Button("Submit"),
                         ),
-                        hx_post="/upload_file",
-                        hx_swap="none",
+                        hx_post="/",
+                        hx_swap="beforeend",
+                        target_id="output_file",
                     ),
                     cls="mb-2",
                 ),
+                fh.Div(id="output_file"),
                 fh.A(
                     fh.Button("Download Target Example Data"),
                     href="https://raw.githubusercontent.com/Nixtla/transfer-learning-time-series/main/datasets/electricity.csv",
@@ -77,34 +85,61 @@ def create_app():
                 cls="col-md-6",
             ),
             fh.H2("Forecasting parameters"),
-            fh.Div(
-                fh.Div(
-                    fh.Input(type="text", name="freq", value="MS"),
-                    label="Define the frequency of your data (see pandas' available frequencies)",
-                    cls="col-md-3",
-                ),
-                fh.Div(
-                    fh.Input(type="number", name="horizon", value="12"),
-                    label="Define forecast horizon (in number of timestamps you want to predict)",
-                    cls="col-md-3",
-                ),
-                fh.Div(
-                    fh.Input(type="number", name="finetune_steps", value="0"),
-                    label="Define finetune steps (use zero for zero-shot inference, which is faster)",
-                    cls="col-md-3",
-                ),
-                fh.Div(
-                    fh.Input(
-                        type="number", name="level", value="90", min="1", max="99"
+            fh.Form(
+                fh.Label(
+                    "Define the frequency of your data (see ",
+                    fh.A(
+                        "pandas' available frequencies",
+                        href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases",
                     ),
-                    label="Define level for prediction intervals (uncertainty estimation)",
-                    cls="col-md-3",
+                    ")",
+                    fh.Input(
+                        type="text",
+                        name="freq",
+                        value="MS",
+                        cls="input input-bordered w-full",
+                    ),
+                    cls="form-control mb-4 label-text p-6",
                 ),
-                cls="row mb-3",
+                fh.Label(
+                    "Define forecast horizon (in number of timestamps you want to predict)",
+                    fh.Input(
+                        type="number",
+                        name="horizon",
+                        value="12",
+                        cls="input input-bordered w-full",
+                    ),
+                    cls="form-control mb-4 label-text p-6",
+                ),
+                fh.Label(
+                    "Define finetune steps (use zero for zero-shot inference, which is faster)",
+                    fh.Input(
+                        type="number",
+                        name="finetune_steps",
+                        value="0",
+                        cls="input input-bordered w-full",
+                    ),
+                    cls="form-control mb-4 label-text p-6",
+                ),
+                fh.Label(
+                    "Define level for prediction intervals (uncertainty estimation)",
+                    fh.Input(
+                        type="number",
+                        name="level",
+                        value="90",
+                        min="1",
+                        max="99",
+                        cls="input input-bordered w-full",
+                    ),
+                    cls="form-control mb-4 label-text p-6",
+                ),
+                fh.Button("Run Forecast", type="submit"),
+                hx_post="/forecast",
+                hx_swap="afterend",
+                target_id="output",
             ),
-            fh.Button("Run Forecast", type="submit"),
+            fh.Div(id="output", cls="col-md-6"),
             cls="container",
-            method="post",
         )
 
     return app

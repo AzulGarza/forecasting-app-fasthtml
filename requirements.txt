@@ -1,4 +1,5 @@
 fh-plotly
+nixtla
 pandas
 pre-commit
 pydantic

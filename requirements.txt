@@ -1,5 +1,5 @@
 pandas
-plotly
 pre-commit
 pydantic
 python-fasthtml
+utilsforecast[plotting]

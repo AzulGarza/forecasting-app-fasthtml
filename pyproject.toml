@@ -33,7 +33,7 @@ line-length = 88
 src = ["predictaweb"]
 
 [tool.ruff.lint.per-file-ignores]
-"predictaweb/ui.py" = ["E501"]
+"predictaweb/app.py" = ["E501"]
 
 [tool.ruff.format]
 docstring-code-format = true

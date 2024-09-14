@@ -1,4 +1,7 @@
+from io import BytesIO
+
 import fasthtml.common as fh
+import pandas as pd
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
@@ -39,7 +42,8 @@ def create_app():
     async def upload_file(uploaded_file: fh.UploadFile):
         print(uploaded_file)
         contents = await uploaded_file.read()
-        print(contents)
+        df = pd.read_csv(BytesIO(contents))
+        print(df)
         return "ok"
 
     @app.route("/")
@@ -55,10 +59,14 @@ def create_app():
             fh.H2("Upload Data and Define Horizon"),
             fh.Div(
                 fh.Div(
-                    fh.Input(id="uploaded_file", type="file"),
-                    label="Upload your time series data (CSV format)",
+                    fh.Form(
+                        fh.Group(
+                            fh.Input(id="uploaded_file", type="file"),
+                            fh.Button("Submit"),
+                        ),
+                        hx_post="/upload_file",
+                    ),
                     cls="mb-2",
-                    hx_post="/upload_file",
                 ),
                 fh.A(
                     fh.Button("Download Target Example Data"),

@@ -177,7 +177,7 @@ def create_app():
                 # Prediction interval input with label and input side by side
                 fh.Div(
                     fh.Label(
-                        "📊 Prediction Confidence Interval (What’s your risk tolerance? Set between 1% and 99%)",
+                        "📊 Prediction Interval (What’s your risk tolerance? Set between 1% and 99%)",
                         cls="label text-gray-300 w-2/3",  # Label takes two-thirds of the width
                     ),
                     fh.Input(

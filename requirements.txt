@@ -1,4 +1,5 @@
 fh-plotly
+modal
 nixtla
 pandas
 pre-commit

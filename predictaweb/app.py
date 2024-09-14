@@ -6,7 +6,27 @@ load_dotenv()
 
 
 def create_app():
-    app = fh.FastHTML(hdrs=(fh.picolink,))
+    def scripts():
+        return [
+            fh.Script(
+                """
+                async function downloadFile(url) {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const urlObject = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = urlObject;
+                    a.download = 'electricity.csv';  // Suggested file name
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(urlObject);
+                }
+                """
+            )
+        ]
+
+    app = fh.FastHTML(hdrs=(fh.picolink, scripts()))
 
     class FormData(BaseModel):
         freq: str = "MS"
@@ -79,6 +99,8 @@ def create_app():
             cls="container",
             method="post",
         )
+
+    return app
 
 
 if __name__ == "__main__":

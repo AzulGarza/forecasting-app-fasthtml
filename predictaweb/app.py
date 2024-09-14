@@ -39,12 +39,10 @@ def create_app():
         uploaded_file: str | None = None
 
     @app.route("/upload_file", methods=["POST"])
-    async def upload_file(uploaded_file: fh.UploadFile):
-        print(uploaded_file)
+    async def upload_file(uploaded_file: fh.UploadFile, session):
         contents = await uploaded_file.read()
         df = pd.read_csv(BytesIO(contents))
-        print(df)
-        return "ok"
+        session["df"] = df.to_json(orient="split")
 
     @app.route("/")
     def index(request, session):
@@ -65,6 +63,7 @@ def create_app():
                             fh.Button("Submit"),
                         ),
                         hx_post="/upload_file",
+                        hx_swap="none",
                     ),
                     cls="mb-2",
                 ),

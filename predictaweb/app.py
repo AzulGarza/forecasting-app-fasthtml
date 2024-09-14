@@ -40,6 +40,7 @@ def create_app():
     def forecast(forecast_params: ForecastParams, session):
         if "df_filename" not in session:
             return fh.Div("Please upload data first")
+        print(forecast_params)
         # df = pd.read_csv(session["df_filename"])
         return fh.Div("Forecasting...")
 
@@ -55,6 +56,7 @@ def create_app():
     @app.route("/")
     def get(session):
         """Main page of the app."""
+        forecast_params = ForecastParams()
         return fh.Div(
             fh.H1("Time Series Forecasting App"),
             fh.P(
@@ -96,7 +98,7 @@ def create_app():
                     fh.Input(
                         type="text",
                         name="freq",
-                        value="MS",
+                        value=forecast_params.freq,
                         cls="input input-bordered w-full",
                     ),
                     cls="form-control mb-4 label-text p-6",
@@ -106,7 +108,7 @@ def create_app():
                     fh.Input(
                         type="number",
                         name="horizon",
-                        value="12",
+                        value=forecast_params.horizon,
                         cls="input input-bordered w-full",
                     ),
                     cls="form-control mb-4 label-text p-6",
@@ -116,7 +118,7 @@ def create_app():
                     fh.Input(
                         type="number",
                         name="finetune_steps",
-                        value="0",
+                        value=forecast_params.finetune_steps,
                         cls="input input-bordered w-full",
                     ),
                     cls="form-control mb-4 label-text p-6",
@@ -126,7 +128,7 @@ def create_app():
                     fh.Input(
                         type="number",
                         name="level",
-                        value="90",
+                        value=forecast_params.level,
                         min="1",
                         max="99",
                         cls="input input-bordered w-full",

@@ -45,7 +45,11 @@ def create_app():
         print(forecast_params)
         df = pd.read_csv(session["df_filename"])
         df["ds"] = pd.to_datetime(df["ds"])
-        fig = plot_series(df, engine="plotly")
+        fig = plot_series(
+            df,
+            engine="plotly",
+            max_insample_length=5 * forecast_params.horizon,
+        )
         return plotly2fasthtml(fig)
 
     @app.route("/")

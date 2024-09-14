@@ -18,7 +18,7 @@ uv venv --python 3.10
 - sync environment
 
 ```
-uv pip sync requirements.txt
+uv pip install -r requirements.txt
 ```
 
 - activate environment

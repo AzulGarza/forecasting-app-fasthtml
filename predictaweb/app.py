@@ -5,6 +5,7 @@ from io import BytesIO
 import fasthtml.common as fh
 import pandas as pd
 from fh_plotly import plotly2fasthtml, plotly_headers
+from nixtla import NixtlaClient
 from utilsforecast.plotting import plot_series
 
 
@@ -49,20 +50,40 @@ def create_app():
         horizon: int = 24
         finetune_steps: int = 0
         level: int = 90
+        nixtla_api_key: str = ""
 
     @app.route("/forecast", methods=["POST"])
     def forecast(forecast_params: ForecastParams, session):
         if "df_filename" not in session:
             return fh.Div("Please upload data first")
-        print(forecast_params)
+
+        if forecast_params.nixtla_api_key == "":
+            hdr = fh.Div(
+                "Please enter your Nixtla API key, if you want to create forecasts",
+            )
+        else:
+            hdr = None
         df = pd.read_csv(session["df_filename"])
         df["ds"] = pd.to_datetime(df["ds"])
+        if forecast_params.nixtla_api_key != "":
+            nixtla_client = NixtlaClient(api_key=forecast_params.nixtla_api_key)
+            fcst_df = nixtla_client.forecast(
+                df=df,
+                h=forecast_params.horizon,
+                freq=forecast_params.freq,
+                level=[forecast_params.level],
+                finetune_steps=forecast_params.finetune_steps,
+            )
+        else:
+            fcst_df = None
         fig = plot_series(
             df,
+            fcst_df,
             engine="plotly",
             max_insample_length=5 * forecast_params.horizon,
+            level=[forecast_params.level],
         )
-        return plotly2fasthtml(fig)
+        return hdr, plotly2fasthtml(fig)
 
     @app.route("/")
     async def post(uploaded_file: fh.UploadFile, session):
@@ -127,6 +148,24 @@ def create_app():
                 "🔧 Tune Your Forecast Settings", cls="text-2xl text-blue-400 mt-6 mb-4"
             ),
             fh.Form(
+                fh.Div(
+                    fh.Label(
+                        "🔐 Add your Nixtla API key",
+                        fh.A(
+                            "Generate one",
+                            href="https://dashboard.nixtla.io/",
+                            cls="text-blue-500",
+                        ),
+                        cls="label text-gray-300 w-2/3",  # Label takes two-thirds of the width
+                    ),
+                    fh.Input(
+                        type="text",
+                        name="nixtla_api_key",
+                        value=forecast_params.nixtla_api_key,
+                        cls="input input-bordered w-1/3 bg-gray-800 text-white border-blue-500",  # Input takes one-third of the width
+                    ),
+                    cls="flex items-center mb-4",  # Flexbox for horizontal alignment
+                ),
                 # Frequency input with label and input side by side
                 fh.Div(
                     fh.Label(
@@ -192,9 +231,7 @@ def create_app():
                 ),
                 # Frequency input with dev-focused help text
                 # Submit Button with more dynamic call to action
-                fh.Button(
-                    "🔮 Generate Forecast", type="submit", cls="btn btn-success mt-4"
-                ),
+                fh.Button("🔮 Forecast", type="submit", cls="btn btn-success mt-4"),
                 hx_post="/forecast",
                 hx_swap="afterend",
                 target_id="output",

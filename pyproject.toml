@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools >= 61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "predictaweb"
+version = "0.0.1"
+dynamic = ["dependencies"]
+requires-python = ">=3.8"
+
+[tool.coverage]
+branch = true
+source = ["predictaweb"]
+
+[tool.coverage.run]
+omit = [
+    "tests/*",
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+
+[tool.mypy]
+disable_error_code = ["no-redef"]  # for fasthtml
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+fix = true
+line-length = 88
+src = ["predictaweb"]
+
+[tool.ruff.lint.per-file-ignores]
+"predictaweb/ui.py" = ["E501"]
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 20
+
+[tool.ruff.lint]
+select = ["E", "F", "UP", "B", "SIM", "I"]
+ignore = [
+  "F811", # redefined function, this is helpful for fasthtml
+]
+
+[tool.ruff.lint.isort]
+known-local-folder = ["predictaweb"]
+no-lines-before = ["local-folder"]
+
+[tool.setuptools]
+packages = ["predictaweb"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}

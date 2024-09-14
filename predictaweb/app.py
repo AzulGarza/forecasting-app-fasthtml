@@ -9,8 +9,11 @@ from utilsforecast.plotting import plot_series
 
 
 def create_app():
-    def scripts():
+    def hdrs():
         return [
+            fh.Meta(charset="UTF-8"),
+            fh.Meta(name="viewport", content="width=device-width, initial-scale=1.0"),
+            fh.Meta(name="description", content="Forecasting App"),
             fh.Script(
                 """
                 async function downloadFile(url) {
@@ -26,10 +29,19 @@ def create_app():
                     window.URL.revokeObjectURL(urlObject);
                 }
                 """
-            )
+            ),
+            fh.Script(src="https://unpkg.com/htmx.org@2.0.2"),
+            fh.Link(
+                href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+                rel="stylesheet",
+            ),
+            fh.Link(
+                href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.css",
+                rel="stylesheet",
+            ),
         ]
 
-    app = fh.FastHTML(hdrs=(fh.picolink, scripts(), *plotly_headers))
+    app = fh.FastHTML(hdrs=(hdrs(), *plotly_headers))
 
     @dataclass
     class ForecastParams:
@@ -59,97 +71,138 @@ def create_app():
         random_filename = f"{uuid.uuid4()}.csv"
         df.to_csv(random_filename, index=False)
         session["df_filename"] = random_filename
-        return fh.Div("Data uploaded")
+        return fh.Div("Data uploaded", cls="text-gray-300")
 
     @app.route("/")
     def get(session):
         """Main page of the app."""
         forecast_params = ForecastParams()
         return fh.Div(
-            fh.H1("Time Series Forecasting App"),
-            fh.P(
-                "👋 Welcome to Nixtla's forecasting app, your one-stop 🎯 solution for predicting your time series with precision powered by TimeGPT."
+            # Title with a developer-focused vibe
+            fh.H1(
+                "🚀 Time Series Forecasting Sandbox",
+                cls="text-4xl font-bold text-green-500 mb-4",
             ),
-            fh.H2("Upload Data and Define Horizon"),
+            # Welcome message with dev-friendly tone
+            fh.P(
+                "💙 Welcome! You're about to enter the world of forecasting, powered by TimeGPT. Let's do this!",
+                cls="text-lg text-gray-300 mb-6",
+            ),
+            # Upload Data section with some developer flavor
+            fh.H2(
+                "⚡ Upload Your Data",
+                cls="text-2xl text-blue-400 mt-6 mb-4",
+            ),
             fh.Div(
                 fh.Div(
                     fh.Form(
                         fh.Group(
-                            fh.Input(id="uploaded_file", type="file"),
-                            fh.Button("Submit"),
+                            fh.Input(
+                                id="uploaded_file",
+                                type="file",
+                                cls="file-input file-input-bordered file-input-primary w-full max-w-xs",
+                            ),
+                            fh.Button("Upload", cls="btn btn-primary ml-2"),
+                            fh.Div(id="output_file", cls="mt-2"),
                         ),
                         hx_post="/",
-                        hx_swap="beforeend",
+                        hx_swap="innerHTML",
                         target_id="output_file",
+                        cls="flex items-center space-x-3",  # Flex layout for alignment
                     ),
                     cls="mb-2",
                 ),
-                fh.Div(id="output_file"),
                 fh.A(
-                    fh.Button("Download Target Example Data"),
+                    fh.Button(
+                        "Download Sample Data", cls="btn btn-xs btn-link text-blue-500"
+                    ),  # Smaller, more subtle button
                     href="https://raw.githubusercontent.com/Nixtla/transfer-learning-time-series/main/datasets/electricity.csv",
                     download=None,
-                    cls="text-blue-500",
                     onClick="event.preventDefault(); downloadFile('https://raw.githubusercontent.com/Nixtla/transfer-learning-time-series/main/datasets/electricity.csv')",
                 ),
-                cls="col-md-6",
+                cls="mb-4",
             ),
-            fh.H2("Forecasting parameters"),
+            # Forecasting Parameters Section, styled for dev audience
+            fh.H2(
+                "🔧 Tune Your Forecast Settings", cls="text-2xl text-blue-400 mt-6 mb-4"
+            ),
             fh.Form(
-                fh.Label(
-                    "Define the frequency of your data (see ",
-                    fh.A(
-                        "pandas' available frequencies",
-                        href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases",
+                # Frequency input with label and input side by side
+                fh.Div(
+                    fh.Label(
+                        "🕒 Data Frequency (e.g., H for hourly, D for daily, etc.) ",
+                        fh.A(
+                            "Check Pandas' Offset Aliases",
+                            href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases",
+                            cls="text-blue-500",
+                        ),
+                        cls="label text-gray-300 w-2/3",  # Label takes two-thirds of the width
                     ),
-                    ")",
                     fh.Input(
                         type="text",
                         name="freq",
                         value=forecast_params.freq,
-                        cls="input input-bordered w-full",
+                        cls="input input-bordered w-1/3 bg-gray-800 text-white border-blue-500",  # Input takes one-third of the width
                     ),
-                    cls="form-control mb-4 label-text p-6",
+                    cls="flex items-center mb-4",  # Flexbox for horizontal alignment
                 ),
-                fh.Label(
-                    "Define forecast horizon (in number of timestamps you want to predict)",
+                # Horizon input with label and input side by side
+                fh.Div(
+                    fh.Label(
+                        "⏳ Forecast Horizon (How far into the future do you want to predict?)",
+                        cls="label text-gray-300 w-2/3",  # Label takes two-thirds of the width
+                    ),
                     fh.Input(
                         type="number",
                         name="horizon",
                         value=forecast_params.horizon,
-                        cls="input input-bordered w-full",
+                        cls="input input-bordered w-1/3 bg-gray-800 text-white border-blue-500",  # Input takes one-third of the width
                     ),
-                    cls="form-control mb-4 label-text p-6",
+                    cls="flex items-center mb-4",  # Flexbox for horizontal alignment
                 ),
-                fh.Label(
-                    "Define finetune steps (use zero for zero-shot inference, which is faster)",
+                # Fine-tune steps input with label and input side by side
+                fh.Div(
+                    fh.Label(
+                        "🚀 Fine-tune Steps (Go zero-shot for instant results, or take your time with custom finetuning)",
+                        cls="label text-gray-300 w-2/3",  # Label takes two-thirds of the width
+                    ),
                     fh.Input(
                         type="number",
                         name="finetune_steps",
                         value=forecast_params.finetune_steps,
-                        cls="input input-bordered w-full",
+                        cls="input input-bordered w-1/3 bg-gray-800 text-white border-blue-500",  # Input takes one-third of the width
                     ),
-                    cls="form-control mb-4 label-text p-6",
+                    cls="flex items-center mb-4",  # Flexbox for horizontal alignment
                 ),
-                fh.Label(
-                    "Define level for prediction intervals (uncertainty estimation)",
+                # Prediction interval input with label and input side by side
+                fh.Div(
+                    fh.Label(
+                        "📊 Prediction Confidence Interval (What’s your risk tolerance? Set between 1% and 99%)",
+                        cls="label text-gray-300 w-2/3",  # Label takes two-thirds of the width
+                    ),
                     fh.Input(
                         type="number",
                         name="level",
                         value=forecast_params.level,
                         min="1",
                         max="99",
-                        cls="input input-bordered w-full",
+                        cls="input input-bordered w-1/3 bg-gray-800 text-white border-blue-500",  # Input takes one-third of the width
                     ),
-                    cls="form-control mb-4 label-text p-6",
+                    cls="flex items-center mb-4",  # Flexbox for horizontal alignment
                 ),
-                fh.Button("Run Forecast", type="submit"),
+                # Frequency input with dev-focused help text
+                # Submit Button with more dynamic call to action
+                fh.Button(
+                    "🔮 Generate Forecast", type="submit", cls="btn btn-success mt-4"
+                ),
                 hx_post="/forecast",
                 hx_swap="afterend",
                 target_id="output",
             ),
-            fh.Div(id="output", cls="col-md-6"),
-            cls="container",
+            # Forecast result output styled for devs
+            fh.Div(id="output", cls="mt-6 text-yellow-300 font-mono"),
+            # Overall page layout
+            cls="container mx-auto p-8 bg-gray-900 text-white rounded-lg shadow-lg",
         )
 
     return app

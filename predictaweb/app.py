@@ -249,3 +249,17 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(f"{__name__}:create_app", host="0.0.0.0", port=8000, reload=True)
+else:
+    import modal
+
+    app = modal.App(name="forecasting-app-fasthtml")
+
+    @app.function(
+        image=modal.Image.debian_slim().pip_install_from_requirements(
+            "requirements.txt"
+        ),
+        allow_concurrent_inputs=1000,
+    )
+    @modal.asgi_app()
+    def serve():
+        return create_app()

@@ -31,8 +31,8 @@ def create_app():
 
     @dataclass
     class ForecastParams:
-        freq: str = "MS"
-        horizon: int = 12
+        freq: str = "H"
+        horizon: int = 24
         finetune_steps: int = 0
         level: int = 90
 

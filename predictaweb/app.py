@@ -4,6 +4,8 @@ from io import BytesIO
 
 import fasthtml.common as fh
 import pandas as pd
+from fh_plotly import plotly2fasthtml, plotly_headers
+from utilsforecast.plotting import plot_series
 
 
 def create_app():
@@ -27,7 +29,7 @@ def create_app():
             )
         ]
 
-    app = fh.FastHTML(hdrs=(fh.picolink, scripts()))
+    app = fh.FastHTML(hdrs=(fh.picolink, scripts(), *plotly_headers))
 
     @dataclass
     class ForecastParams:
@@ -41,8 +43,10 @@ def create_app():
         if "df_filename" not in session:
             return fh.Div("Please upload data first")
         print(forecast_params)
-        # df = pd.read_csv(session["df_filename"])
-        return fh.Div("Forecasting...")
+        df = pd.read_csv(session["df_filename"])
+        df["ds"] = pd.to_datetime(df["ds"])
+        fig = plot_series(df, engine="plotly")
+        return plotly2fasthtml(fig)
 
     @app.route("/")
     async def post(uploaded_file: fh.UploadFile, session):

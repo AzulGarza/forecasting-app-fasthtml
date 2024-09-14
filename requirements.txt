@@ -1,3 +1,4 @@
+fh-plotly
 pandas
 pre-commit
 pydantic

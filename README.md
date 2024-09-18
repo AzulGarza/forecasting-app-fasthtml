@@ -15,17 +15,19 @@ pip install uv
 uv venv --python 3.10
 ```
 
+- activate environment
+
+```
+source .venv/bin/activate
+```
+
 - sync environment
 
 ```
 uv pip install -r requirements.txt
 ```
 
-- activate environment
 
-```
-source .venv/bin/activate
-```
 
 
 

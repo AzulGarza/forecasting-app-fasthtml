@@ -52,38 +52,28 @@ def create_app():
         level: int = 90
         nixtla_api_key: str = ""
 
-    @app.route("/forecast", methods=["POST"])
-    def forecast(forecast_params: ForecastParams, session):
+    @app.route("/plot_data", methods=["POST"])
+    def plot_data(forecast_params: ForecastParams, session):
         if "df_filename" not in session:
             return fh.Div("Please upload data first")
 
-        if forecast_params.nixtla_api_key == "":
-            hdr = fh.Div(
-                "Please enter your Nixtla API key, if you want to create forecasts",
-            )
-        else:
-            hdr = None
         df = pd.read_csv(session["df_filename"])
         df["ds"] = pd.to_datetime(df["ds"])
-        if forecast_params.nixtla_api_key != "":
-            nixtla_client = NixtlaClient(api_key=forecast_params.nixtla_api_key)
-            fcst_df = nixtla_client.forecast(
-                df=df,
-                h=forecast_params.horizon,
-                freq=forecast_params.freq,
-                level=[forecast_params.level],
-                finetune_steps=forecast_params.finetune_steps,
-            )
-        else:
-            fcst_df = None
+        client = NixtlaClient(api_key=forecast_params.nixtla_api_key)
+        fcst_df = client.forecast(
+            df,
+            freq=forecast_params.freq,
+            h=forecast_params.horizon,
+            finetune_steps=forecast_params.finetune_steps,
+            level=[forecast_params.level],
+        )
         fig = plot_series(
             df,
             fcst_df,
             engine="plotly",
-            max_insample_length=5 * forecast_params.horizon,
             level=[forecast_params.level],
         )
-        return hdr, plotly2fasthtml(fig)
+        return plotly2fasthtml(fig)
 
     @app.route("/")
     async def post(uploaded_file: fh.UploadFile, session):
@@ -97,16 +87,15 @@ def create_app():
     @app.route("/")
     def get(session):
         """Main page of the app."""
-        forecast_params = ForecastParams()
         return fh.Div(
             # Title with a developer-focused vibe
             fh.H1(
-                "🚀 Time Series Forecasting Sandbox",
+                "🚀 Time Series Sandbox",
                 cls="text-4xl font-bold text-green-500 mb-4",
             ),
             # Welcome message with dev-friendly tone
             fh.P(
-                "💙 Welcome! You're about to enter the world of forecasting, powered by TimeGPT. Let's do this!",
+                "💙 Welcome! You're about to enter the world of time series, powered by Nixtla. Let's do this!",
                 cls="text-lg text-gray-300 mb-6",
             ),
             # Upload Data section with some developer flavor
@@ -161,7 +150,7 @@ def create_app():
                     fh.Input(
                         type="text",
                         name="nixtla_api_key",
-                        value=forecast_params.nixtla_api_key,
+                        value="",
                         cls="input input-bordered w-1/3 bg-gray-800 text-white border-blue-500",  # Input takes one-third of the width
                     ),
                     cls="flex items-center mb-4",  # Flexbox for horizontal alignment
@@ -180,7 +169,7 @@ def create_app():
                     fh.Input(
                         type="text",
                         name="freq",
-                        value=forecast_params.freq,
+                        value="MS",
                         cls="input input-bordered w-1/3 bg-gray-800 text-white border-blue-500",  # Input takes one-third of the width
                     ),
                     cls="flex items-center mb-4",  # Flexbox for horizontal alignment
@@ -194,7 +183,7 @@ def create_app():
                     fh.Input(
                         type="number",
                         name="horizon",
-                        value=forecast_params.horizon,
+                        value=24,
                         cls="input input-bordered w-1/3 bg-gray-800 text-white border-blue-500",  # Input takes one-third of the width
                     ),
                     cls="flex items-center mb-4",  # Flexbox for horizontal alignment
@@ -208,7 +197,7 @@ def create_app():
                     fh.Input(
                         type="number",
                         name="finetune_steps",
-                        value=forecast_params.finetune_steps,
+                        value="0",
                         cls="input input-bordered w-1/3 bg-gray-800 text-white border-blue-500",  # Input takes one-third of the width
                     ),
                     cls="flex items-center mb-4",  # Flexbox for horizontal alignment
@@ -222,7 +211,7 @@ def create_app():
                     fh.Input(
                         type="number",
                         name="level",
-                        value=forecast_params.level,
+                        value="90",
                         min="1",
                         max="99",
                         cls="input input-bordered w-1/3 bg-gray-800 text-white border-blue-500",  # Input takes one-third of the width
@@ -231,8 +220,8 @@ def create_app():
                 ),
                 # Frequency input with dev-focused help text
                 # Submit Button with more dynamic call to action
-                fh.Button("🔮 Forecast", type="submit", cls="btn btn-success mt-4"),
-                hx_post="/forecast",
+                fh.Button("🔮 Visualize", type="submit", cls="btn btn-success mt-4"),
+                hx_post="/plot_data",
                 hx_swap="afterend",
                 target_id="output",
             ),
